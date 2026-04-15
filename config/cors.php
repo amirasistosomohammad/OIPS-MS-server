@@ -5,9 +5,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')],
+    'allowed_origins' => array_values(array_filter([
+        env('FRONTEND_URL'),
+        env('APP_URL'),
+        'http://localhost:5173',
+    ])),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => array_values(array_filter([
+        env('CORS_ALLOWED_ORIGINS_PATTERN'),
+    ])),
 
     'allowed_headers' => ['*'],
 

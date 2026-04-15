@@ -26,6 +26,7 @@ Route::prefix('auth')->group(function (): void {
 });
 
 Route::get('settings', [SystemSettingsController::class, 'public']);
+Route::get('assets/{path}', [SystemSettingsController::class, 'asset'])->where('path', '.*');
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('users', UserManagementController::class);

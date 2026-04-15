@@ -163,6 +163,25 @@ class SystemSettingsController extends Controller
     }
 
     /**
+     * Stream files from the public disk via API.
+     * This avoids web-server /storage symlink restrictions on some PaaS setups.
+     */
+    public function asset(string $path)
+    {
+        $normalizedPath = ltrim($path, '/');
+        if ($normalizedPath === '' || str_contains($normalizedPath, '..')) {
+            abort(404);
+        }
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($normalizedPath), 404);
+
+        return $disk->response($normalizedPath, null, [
+            'Cache-Control' => 'public, max-age=31536000',
+        ]);
+    }
+
+    /**
      * Build absolute URL for a public disk path. Prefer the incoming request host so branding
      * URLs work when APP_URL is wrong in production (e.g. still localhost behind a reverse proxy).
      */
@@ -172,10 +191,11 @@ class SystemSettingsController extends Controller
             return null;
         }
 
-        $relative = Storage::url($path);
-        if (! str_starts_with($relative, '/')) {
-            $relative = '/'.$relative;
-        }
+        $encodedPath = collect(explode('/', ltrim($path, '/')))
+            ->filter(fn ($segment) => $segment !== '')
+            ->map(fn ($segment) => rawurlencode($segment))
+            ->implode('/');
+        $relative = '/api/assets/'.$encodedPath;
 
         if ($request !== null) {
             return rtrim($request->getSchemeAndHttpHost(), '/').$relative;
