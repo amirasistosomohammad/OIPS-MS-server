@@ -5,11 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
-    public function index(): JsonResponse
+    private function ensureAdmin(Request $request): void
     {
+        $user = $request->user();
+        abort_unless($user && (($user->role ?? null) === 'admin' || $user->email === 'admin@admin.com'), 403, 'Forbidden.');
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
         $logs = ActivityLog::query()
             ->with('user:id,name,email,role')
             ->orderByDesc('action_time')
@@ -21,8 +30,10 @@ class ActivityLogController extends Controller
         ]);
     }
 
-    public function show(ActivityLog $activityLog): JsonResponse
+    public function show(Request $request, ActivityLog $activityLog): JsonResponse
     {
+        $this->ensureAdmin($request);
+
         $activityLog->load('user:id,name,email,role');
 
         return response()->json([

@@ -16,8 +16,16 @@ class UserManagementController extends Controller
     /** Seeded primary admin — hidden from the user list (single built-in account). */
     private const DEFAULT_ADMIN_EMAIL = 'admin@admin.com';
 
+    private function ensureAdmin(Request $request): void
+    {
+        $user = $request->user();
+        abort_unless($user && (($user->role ?? null) === 'admin' || $user->email === self::DEFAULT_ADMIN_EMAIL), 403, 'Forbidden.');
+    }
+
     public function index(): JsonResponse
     {
+        $this->ensureAdmin(request());
+
         $users = User::query()
             ->select(['id', 'name', 'email', 'role', 'field_office', 'created_at'])
             ->where('email', '!=', self::DEFAULT_ADMIN_EMAIL)
@@ -32,6 +40,8 @@ class UserManagementController extends Controller
 
     public function show(User $user): JsonResponse
     {
+        $this->ensureAdmin(request());
+
         return response()->json([
             'data' => $this->transformUser($user),
         ]);
@@ -39,11 +49,12 @@ class UserManagementController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->ensureAdmin($request);
+
         $data = $request->validate(
             [
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9@._-]+$/', 'unique:users,email'],
-                'role' => ['nullable', 'string', 'in:admin'],
                 'field_office' => ['nullable', 'string', 'max:100'],
                 'password' => ['required', 'string', 'max:255', Password::min(8)->letters()->numbers()],
             ],
@@ -55,7 +66,7 @@ class UserManagementController extends Controller
         $user = User::query()->create([
             'name' => $data['name'],
             'email' => $data['username'],
-            'role' => $data['role'] ?? 'admin',
+            'role' => 'system',
             'field_office' => $data['field_office'] ?? null,
             'password' => Hash::make($data['password']),
         ]);
@@ -70,13 +81,14 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $user): JsonResponse
     {
+        $this->ensureAdmin($request);
+
         $oldValues = $this->transformUser($user);
 
         $data = $request->validate(
             [
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9@._-]+$/', 'unique:users,email,'.$user->id],
-                'role' => ['nullable', 'string', 'in:admin'],
                 'field_office' => ['nullable', 'string', 'max:100'],
                 'password' => [
                     'nullable',
@@ -93,7 +105,6 @@ class UserManagementController extends Controller
         $updatePayload = [
             'name' => $data['name'],
             'email' => $data['username'],
-            'role' => $data['role'] ?? 'admin',
             'field_office' => $data['field_office'] ?? null,
         ];
 
@@ -114,6 +125,8 @@ class UserManagementController extends Controller
 
     public function destroy(Request $request, User $user): JsonResponse
     {
+        $this->ensureAdmin($request);
+
         if ($user->email === self::DEFAULT_ADMIN_EMAIL) {
             return response()->json([
                 'message' => 'Default admin account cannot be deleted.',

@@ -43,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('metadata/status-options', [ProgramMetadataController::class, 'statusOptions']);
     Route::get('metadata/field-templates', [ProgramMetadataController::class, 'fieldTemplates']);
     Route::get('reports/summary', [ReportsController::class, 'summary']);
+    Route::get('reports/summary/export/excel', [ReportsController::class, 'exportExcel']);
+    Route::get('reports/summary/export/pdf', [ReportsController::class, 'exportPdf']);
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
     Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show']);
     Route::put('user/password', [UserSecurityController::class, 'updatePassword']);
