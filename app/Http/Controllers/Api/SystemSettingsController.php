@@ -17,7 +17,7 @@ class SystemSettingsController extends Controller
         'legacy' => 'logo_path',
     ];
 
-    public function public(): JsonResponse
+    public function public(Request $request): JsonResponse
     {
         $settings = SystemSetting::singleton();
         $logoPath = $settings->logo_primary_path ?: $settings->logo_path;
@@ -27,15 +27,15 @@ class SystemSettingsController extends Controller
             'topbar_title' => $settings->app_name,
             'login_title' => $settings->app_name,
             'logo_path' => $settings->logo_path,
-            'logo_url' => $this->assetUrl($settings->logo_path),
+            'logo_url' => $this->assetUrl($settings->logo_path, $request),
             'logo_primary_path' => $logoPath,
-            'logo_primary_url' => $this->assetUrl($logoPath),
+            'logo_primary_url' => $this->assetUrl($logoPath, $request),
             'logo_secondary_path' => $settings->logo_secondary_path,
-            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path),
+            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path, $request),
             'logo_tertiary_path' => $settings->logo_tertiary_path,
-            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path),
+            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path, $request),
             'auth_background_path' => $settings->auth_background_path,
-            'auth_background_url' => $this->assetUrl($settings->auth_background_path),
+            'auth_background_url' => $this->assetUrl($settings->auth_background_path, $request),
         ]);
     }
 
@@ -60,15 +60,15 @@ class SystemSettingsController extends Controller
             'topbar_title' => $settings->app_name,
             'login_title' => $settings->app_name,
             'logo_path' => $settings->logo_path,
-            'logo_url' => $this->assetUrl($settings->logo_path),
+            'logo_url' => $this->assetUrl($settings->logo_path, $request),
             'logo_primary_path' => $settings->logo_primary_path,
-            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path),
+            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path, $request),
             'logo_secondary_path' => $settings->logo_secondary_path,
-            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path),
+            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path, $request),
             'logo_tertiary_path' => $settings->logo_tertiary_path,
-            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path),
+            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path, $request),
             'auth_background_path' => $settings->auth_background_path,
-            'auth_background_url' => $this->assetUrl($settings->auth_background_path),
+            'auth_background_url' => $this->assetUrl($settings->auth_background_path, $request),
         ]);
     }
 
@@ -95,13 +95,13 @@ class SystemSettingsController extends Controller
             'message' => 'Logo updated successfully.',
             'slot' => $slot,
             'logo_path' => $settings->logo_path,
-            'logo_url' => $this->assetUrl($settings->logo_path),
+            'logo_url' => $this->assetUrl($settings->logo_path, $request),
             'logo_primary_path' => $settings->logo_primary_path,
-            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path),
+            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path, $request),
             'logo_secondary_path' => $settings->logo_secondary_path,
-            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path),
+            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path, $request),
             'logo_tertiary_path' => $settings->logo_tertiary_path,
-            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path),
+            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path, $request),
         ]);
     }
 
@@ -130,13 +130,13 @@ class SystemSettingsController extends Controller
             'message' => 'Logo removed successfully.',
             'slot' => $slot,
             'logo_path' => $settings->logo_path,
-            'logo_url' => $this->assetUrl($settings->logo_path),
+            'logo_url' => $this->assetUrl($settings->logo_path, $request),
             'logo_primary_path' => $settings->logo_primary_path,
-            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path),
+            'logo_primary_url' => $this->assetUrl($settings->logo_primary_path, $request),
             'logo_secondary_path' => $settings->logo_secondary_path,
-            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path),
+            'logo_secondary_url' => $this->assetUrl($settings->logo_secondary_path, $request),
             'logo_tertiary_path' => $settings->logo_tertiary_path,
-            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path),
+            'logo_tertiary_url' => $this->assetUrl($settings->logo_tertiary_path, $request),
         ]);
     }
 
@@ -158,17 +158,30 @@ class SystemSettingsController extends Controller
         return response()->json([
             'message' => 'Auth background updated successfully.',
             'auth_background_path' => $path,
-            'auth_background_url' => $this->assetUrl($path),
+            'auth_background_url' => $this->assetUrl($path, $request),
         ]);
     }
 
-    private function assetUrl(?string $path): ?string
+    /**
+     * Build absolute URL for a public disk path. Prefer the incoming request host so branding
+     * URLs work when APP_URL is wrong in production (e.g. still localhost behind a reverse proxy).
+     */
+    private function assetUrl(?string $path, ?Request $request = null): ?string
     {
         if (! $path) {
             return null;
         }
 
-        return url(Storage::url($path));
+        $relative = Storage::url($path);
+        if (! str_starts_with($relative, '/')) {
+            $relative = '/'.$relative;
+        }
+
+        if ($request !== null) {
+            return rtrim($request->getSchemeAndHttpHost(), '/').$relative;
+        }
+
+        return url($relative);
     }
 
     private function ensureAdmin(Request $request): void
