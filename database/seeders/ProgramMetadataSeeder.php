@@ -176,12 +176,6 @@ class ProgramMetadataSeeder extends Seeder
             ],
             'BPBH' => [
                 'input' => [
-                    ['key' => 'contact_number', 'label' => 'Number'],
-                    ['key' => 'school_year', 'label' => 'School Year'],
-                    ['key' => 'school_name', 'label' => 'School'],
-                    ['key' => 'course', 'label' => 'Course'],
-                    ['key' => 'year_level', 'label' => 'Year Level'],
-                    ['key' => 'category', 'label' => 'Category'],
                     ['key' => 'date_cheque_released', 'label' => 'Date Cheque Released', 'type' => 'date'],
                     ['key' => 'business_status', 'label' => 'Operational Status'],
                     ['key' => 'last_monitored_at', 'label' => 'Last Monitored (Called)', 'type' => 'date'],
