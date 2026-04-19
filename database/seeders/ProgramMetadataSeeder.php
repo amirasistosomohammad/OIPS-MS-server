@@ -20,6 +20,7 @@ class ProgramMetadataSeeder extends Seeder
             ['code' => 'ELAP', 'name' => 'Education and Livelihood Assistance Program', 'type' => 'Degree Granting', 'interval' => 6],
             ['code' => 'TAP', 'name' => 'Tuloy Aral Program', 'type' => 'Degree Granting', 'interval' => 6],
             ['code' => 'CMWSP', 'name' => 'Congressional Migrant Workers Scholarship Program', 'type' => 'Degree Granting', 'interval' => 6],
+            ['code' => 'BPBH', 'name' => 'Balik-Pinas Hanapbuhay Program', 'type' => 'Reintegration', 'interval' => 12],
             ['code' => 'SWC', 'name' => 'Social Welfare Services - Welfare Case Management', 'type' => 'Labor Force and Welfare Services', 'interval' => 1],
             ['code' => 'PDOS', 'name' => 'Pre-Departure Orientation Seminar', 'type' => 'Pre-Departure Education Program', 'interval' => 0],
             ['code' => 'LCF', 'name' => 'Language, Culture and Familiarization', 'type' => 'Pre-Departure Education Program', 'interval' => 0],
@@ -48,10 +49,17 @@ class ProgramMetadataSeeder extends Seeder
             'SWC' => ['ON_GOING' => 'On-going', 'CASE_CLOSED' => 'Case Closed'],
             'PDOS' => ['DONE' => 'Done', 'WITHDRAW' => 'Withdraw'],
             'LCF' => ['DONE' => 'Done', 'WITHDRAW' => 'Withdraw'],
+            'BPBH' => ['OPERATIONAL' => 'Operational', 'NON_OPERATIONAL' => 'Non Operational'],
         ];
 
         $defaultStatuses = ['GRADUATED' => 'Graduated', 'MAINTAINED' => 'Maintained', 'SUSPENDED' => 'Suspended'];
         $statuses = $statusSets[$program->program_code] ?? $defaultStatuses;
+        $statusCodes = array_keys($statuses);
+
+        ProgramStatusOption::query()
+            ->where('program_id', $program->id)
+            ->whereNotIn('status_code', $statusCodes)
+            ->update(['is_active' => false]);
 
         $order = 1;
         foreach ($statuses as $code => $label) {
@@ -166,6 +174,25 @@ class ProgramMetadataSeeder extends Seeder
                     ['key' => 'amount_received', 'label' => 'Amount Received Every Sem', 'type' => 'number'],
                 ],
             ],
+            'BPBH' => [
+                'input' => [
+                    ['key' => 'contact_number', 'label' => 'Number'],
+                    ['key' => 'school_year', 'label' => 'School Year'],
+                    ['key' => 'school_name', 'label' => 'School'],
+                    ['key' => 'course', 'label' => 'Course'],
+                    ['key' => 'year_level', 'label' => 'Year Level'],
+                    ['key' => 'category', 'label' => 'Category'],
+                    ['key' => 'date_cheque_released', 'label' => 'Date Cheque Released', 'type' => 'date'],
+                    ['key' => 'business_status', 'label' => 'Operational Status'],
+                    ['key' => 'last_monitored_at', 'label' => 'Last Monitored (Called)', 'type' => 'date'],
+                ],
+                'update' => [
+                    ['key' => 'date_cheque_released', 'label' => 'Date Cheque Released', 'type' => 'date'],
+                    ['key' => 'business_status', 'label' => 'Operational Status'],
+                    ['key' => 'last_monitored_at', 'label' => 'Last Monitored (Called)', 'type' => 'date'],
+                    ['key' => 'remarks', 'label' => 'Remarks', 'type' => 'textarea', 'required' => true],
+                ],
+            ],
             'SWC' => [
                 'input' => [
                     ['key' => 'date_intake', 'label' => 'Date / Endorsed Intake', 'type' => 'date'],
@@ -217,6 +244,20 @@ class ProgramMetadataSeeder extends Seeder
         $selected = $fieldSets[$program->program_code] ?? $fallback;
         $inputFields = $selected['input'];
         $updateFields = $selected['update'];
+        $inputKeys = array_column($inputFields, 'key');
+        $updateKeys = array_column($updateFields, 'key');
+
+        ProgramFieldTemplate::query()
+            ->where('program_id', $program->id)
+            ->where('field_scope', 'input')
+            ->whereNotIn('field_key', $inputKeys)
+            ->update(['is_active' => false]);
+
+        ProgramFieldTemplate::query()
+            ->where('program_id', $program->id)
+            ->where('field_scope', 'update')
+            ->whereNotIn('field_key', $updateKeys)
+            ->update(['is_active' => false]);
 
         $order = 1;
         foreach ($inputFields as $field) {

@@ -15,7 +15,7 @@ class ProgramEnrollmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = ProgramEnrollment::query()
-            ->with(['beneficiary:id,beneficiary_no,last_name,first_name', 'program:id,program_code,program_name']);
+            ->with(['beneficiary:id,beneficiary_no,last_name,first_name,middle_name,contact_number', 'program:id,program_code,program_name']);
 
         if ($request->filled('beneficiary_id')) {
             $query->where('beneficiary_id', (int) $request->query('beneficiary_id'));
@@ -34,6 +34,10 @@ class ProgramEnrollmentController extends Controller
                     'beneficiary_id' => $row->beneficiary_id,
                     'beneficiary_no' => $row->beneficiary?->beneficiary_no,
                     'beneficiary_name' => trim(($row->beneficiary?->last_name ?? '').', '.($row->beneficiary?->first_name ?? '')),
+                    'beneficiary_last_name' => $row->beneficiary?->last_name,
+                    'beneficiary_first_name' => $row->beneficiary?->first_name,
+                    'beneficiary_middle_name' => $row->beneficiary?->middle_name,
+                    'beneficiary_contact_number' => $row->beneficiary?->contact_number,
                     'program_id' => $row->program_id,
                     'program_code' => $row->program?->program_code,
                     'program_name' => $row->program?->program_name,
@@ -75,14 +79,14 @@ class ProgramEnrollmentController extends Controller
         ]);
 
         $this->logAction($request, 'CREATE', $row, null, $row->toArray());
-        $fresh = ProgramEnrollment::query()->with(['beneficiary:id,beneficiary_no,last_name,first_name', 'program:id,program_code,program_name'])->findOrFail($row->id);
+        $fresh = ProgramEnrollment::query()->with(['beneficiary:id,beneficiary_no,last_name,first_name,middle_name,contact_number', 'program:id,program_code,program_name'])->findOrFail($row->id);
 
         return response()->json(['data' => $fresh, 'message' => 'Enrollment created successfully.'], 201);
     }
 
     public function show(ProgramEnrollment $enrollment): JsonResponse
     {
-        $enrollment->load(['beneficiary:id,beneficiary_no,last_name,first_name', 'program:id,program_code,program_name']);
+        $enrollment->load(['beneficiary:id,beneficiary_no,last_name,first_name,middle_name,contact_number', 'program:id,program_code,program_name']);
 
         return response()->json(['data' => $enrollment]);
     }
